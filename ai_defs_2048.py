@@ -28,7 +28,7 @@ def random_play():
 
 #option 2: MCTS
 
-def mcts():
+def mcts(self, verbose):
   while b0.over == False:
    b0.game_state()
    if b0.over == False:
@@ -65,7 +65,8 @@ def mcts():
     for i in range(len(options)):
       if avg_mcts_score[i]==max(avg_mcts_score):
         b0.move(options[i])
-        #print b0.state
+        if verbose==1
+         print b0.state
 
 
 for i in range(10):
