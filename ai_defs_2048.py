@@ -74,37 +74,7 @@ for i in range(10):
  b0.game_state()
  while b0.over == False:
   try:
-   mcts()
+   mcts(0)
   except:
    failed_attempt=[]
  print b0.score
-
-
- all_scores[i]=b0.score  
-
-
-
-
-
-def select_best_score(self, 
-  
-
-
-#replicate the board state
-#for loop for the number of moves to be tried; while self.over==False: loop for the moves
-#use average score to select the next move
-
-#option 3: MCTS with an ML mapping to constrain search space
-
-#vizuals: use images of 2 4 8 16 32 64 128 256 512 1024 2048 4096 and 8192 to display the game progress
-#have a separate window for the strategy explanations
-
-             try:
-              l.remove(k)
-              k=choice(l)
-              btest.move(options[k])                      
-             except:
-               l.remove(k)
-               k=choice(l)
-               btest.move(options[k])                      
-
