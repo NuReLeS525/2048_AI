@@ -10,3 +10,6 @@ A very basic MCTS alogirthm that tries a number (100) of random plays (10 moves 
 Does an ok job (cracking the 2048) in many cases. 
 
 Improvements to be added include: 1) parallelization 2) more advanced MCTS versions (playouts to be longer) 3) possibly ML/deep learning similar to Alpha Go to limit the search.
+
+# how to run:
+download both files; run the first few lines in *ai_defs_2048.py* in a python console and then edit the remaining code to run the mcts with or without printing the individual board states.
