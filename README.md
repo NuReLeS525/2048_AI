@@ -1,5 +1,5 @@
 # 2048_AI
-A python implementation of the 2048 game with a Monte Carlo Tree Search algorithm 
+A python implementation of the 2048 game with a Monte Carlo Tree Search algorithm. Requires sys, os numpy, copy, random, tkinter, and PIL modules. All of these are usually pre-installed.
 
 # game_defs_2048.py
 A python class and functions implementing the game - moves, game state, checking whether the game is over or not.
@@ -12,4 +12,7 @@ Does an ok job (cracking the 2048) in many cases.
 Improvements to be added include: 1) parallelization 2) more advanced MCTS versions (playouts to be longer) 3) possibly ML/deep learning similar to Alpha Go to limit the search.
 
 # How to run:
-download both files; run the first few lines in *ai_defs_2048.py* in a python console and then edit the remaining code to run the mcts with or without printing the individual board states.
+1) Download all files to a folder of your choice
+2) Start a terminal in that folder
+3) Make sure all python modules are installed
+4) Type *python mcts_2048_run.py* and a window will appear playing the 2048 game. Achieved game score will be printed to the terminal console.
