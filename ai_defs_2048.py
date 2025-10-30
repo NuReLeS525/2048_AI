@@ -17,10 +17,10 @@ def random_play():
     b0.game_state()
     if b0.over == False:
       b0.move(options[randint(0, 3)])
-      print b0.state
+      print(b0.state)
   except:
     print("sth went wrong")
- print b0.score
+ print(b0.score)
 
 #figure out how to only select from the available moves - e.g. block the vert moves if there are no same cells in vert
 
@@ -65,8 +65,8 @@ def mcts(self, verbose):
     for i in range(len(options)):
       if avg_mcts_score[i]==max(avg_mcts_score):
         b0.move(options[i])
-        if verbose==1
-         print b0.state
+        if verbose==1:
+         print(b0.state)
 
 
 for i in range(10):
@@ -77,4 +77,4 @@ for i in range(10):
    mcts(0)
   except:
    failed_attempt=[]
- print b0.score
+ print(b0.score)

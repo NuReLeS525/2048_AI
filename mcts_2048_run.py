@@ -1,172 +1,124 @@
+# mcts_2048_run.py
 import sys
 import os
-sys.path.append(os.getcwd)
-from game_defs_2048 import board, rm_zeros, new_game
-import numpy as np
+sys.path.append(os.getcwd())   # IMPORTANT: parentheses
+from game_defs_2048 import Board
 import copy
-from random import randint, random, choice
+import numpy as np
+from random import randint, choice
 from tkinter import *
 from PIL import Image, ImageTk
-import os
 import time
-options=['up', 'down', 'left', 'right']
-n=4
 
+OPTIONS = ['up', 'down', 'left', 'right']
 
-def mcts():
-  while b0.over == False:
-   show_board(b0.score, b0.state)
-   #time.sleep(0.2)
-   b0.game_state()
-   if b0.over == False:
-    mcts_move=np.zeros(100)
-    mcts_score=np.zeros(100)
-    avg_mcts_score=np.zeros(4)
-    for i in range(500):
-      btest=copy.deepcopy(b0)
-      try:
-        for d in range(10):
-          btest.game_state()
-          if btest.over == False:      
-           try:
-            k=randint(0, 3)
-            if d==0:
-              mcts_move[i]=k
-            btest.move(options[k])
-           except:
-            try:
-             l=[0, 1, 2, 3]
-             l.remove(k)
-             k=choice(l)
-             btest.move(options[k])
-            except:                 
-             fail_move=[]
-          else:
-            mcts_score[i]=btest.score
-          mcts_score[i]=btest.score
-        del btest
-      except: 
-        fail_move=[]      
-    for i in range(len(options)):
-      avg_mcts_score[i]=np.mean(mcts_score[mcts_move==i])
-    for i in range(len(options)):
-      if avg_mcts_score[i]==max(avg_mcts_score):
-        b0.move(options[i])
-        #print b0.state
+def mcts_choose_move(board, trials=300, depth=10):
+    """
+    Simple Monte Carlo: for each possible first move, run many random playouts and
+    take the move with highest average final score.
+    """
+    # generate list of legal first moves (those that change the board)
+    legal_moves = []
+    for move in OPTIONS:
+        bcopy = copy.deepcopy(board)
+        changed, _ = bcopy.move(move)
+        if changed:
+            legal_moves.append(move)
 
+    if not legal_moves:
+        return None
 
+    avg_scores = {m: [] for m in legal_moves}
 
-def show_board(score, state):
-	window.update()
-	lbl=Label(window, text=score, fg='black', font=("Helvetica", 26))
-	lbl.place(x=225, y=88)
-	#top row
-	if state[0,0]>0:
-	 pos0=Label(window, text=state[0, 0], fg='black', font=("Helvetica", 26))
-	 pos0.place(x=108, y=185)
-	if state[0,1]>0:
-	 pos1=Label(window, text=state[0, 1], fg='black', font=("Helvetica", 26)) 
-	 pos1.place(x=228, y=185)
-	if state[0,2]>0:
-	 pos2=Label(window, text=state[0, 2], fg='black', font=("Helvetica", 26))
-	 pos2.place(x=348, y=185)
-	if state[0,3]>0:
-	 pos3=Label(window, text=state[0, 3], fg='black', font=("Helvetica", 26))
-	 pos3.place(x=468, y=185)
+    for m in legal_moves:
+        for t in range(trials // len(legal_moves)):
+            btest = copy.deepcopy(board)
+            # perform the first chosen move
+            btest.move(m)
+            # simulate random plays for 'depth' moves
+            for d in range(depth):
+                if btest.over:
+                    break
+                # pick a random valid move
+                possible = []
+                for mv in OPTIONS:
+                    btmp = copy.deepcopy(btest)
+                    ch, _ = btmp.move(mv)
+                    if ch:
+                        possible.append(mv)
+                if not possible:
+                    break
+                btest.move(choice(possible))
+            avg_scores[m].append(btest.score)
+    # compute means
+    means = {m: (np.mean(avg_scores[m]) if avg_scores[m] else -1) for m in avg_scores}
+    # pick best
+    best_move = max(means, key=lambda k: means[k])
+    return best_move
 
-	if state[1,0]>0:
-	 pos4=Label(window, text=state[1, 0], fg='black', font=("Helvetica", 26))
-	 pos4.place(x=108, y=280)
-	if state[1,1]>0:
-	 pos5=Label(window, text=state[1, 1], fg='black', font=("Helvetica", 26)) 
-	 pos5.place(x=228, y=280)
-	if state[1,2]>0:
-	 pos6=Label(window, text=state[1, 2], fg='black', font=("Helvetica", 26))
-	 pos6.place(x=348, y=280)
-	if state[1,3]>0:
-	 pos7=Label(window, text=state[1, 3], fg='black', font=("Helvetica", 26))
-	 pos7.place(x=468, y=280)
+# ---- GUI helpers ----
+class GUI:
+    def __init__(self, root, board):
+        self.root = root
+        self.board = board
+        root.title("2048 - AI")
+        root.geometry("654x608")
+        # try background.png
+        try:
+            self.img = ImageTk.PhotoImage(Image.open("background.png"))
+            self.bg = Label(root, image=self.img)
+            self.bg.place(x=0, y=0)
+        except Exception:
+            self.root.configure(bg="#bbada0")
 
-	if state[2,0]>0:
-	 pos8=Label(window, text=state[2, 0], fg='black', font=("Helvetica", 26))
-	 pos8.place(x=108, y=380)
-	if state[2,1]>0:
-	 pos9=Label(window, text=state[2, 1], fg='black', font=("Helvetica", 26)) 
-	 pos9.place(x=228, y=380)
-	if state[2,2]>0:
-	 pos10=Label(window, text=state[2, 2], fg='black', font=("Helvetica", 26))
-	 pos10.place(x=348, y=380)
-	if state[2,3]>0:
-	 pos11=Label(window, text=state[2, 3], fg='black', font=("Helvetica", 26))
-	 pos11.place(x=468, y=380)
+        self.score_label = Label(root, text=str(board.score), font=("Helvetica", 26))
+        self.score_label.place(x=225, y=88)
 
-	if state[3,0]>0:
-	 pos12=Label(window, text=state[3, 0], fg='black', font=("Helvetica", 26))
-	 pos12.place(x=108, y=480)
-	if state[3,1]>0:
-	 pos13=Label(window, text=state[3, 1], fg='black', font=("Helvetica", 26)) 
-	 pos13.place(x=228, y=480)
-	if state[3,2]>0:
-	 pos14=Label(window, text=state[3, 2], fg='black', font=("Helvetica", 26))
-	 pos14.place(x=348, y=480)
-	if state[3,3]>0:
-	 pos15=Label(window, text=state[3, 3], fg='black', font=("Helvetica", 26))
-	 pos15.place(x=468, y=480)
-	window.update()
+        # create 4x4 label grid (we will update text)
+        self.cells = []
+        xs = [108, 228, 348, 468]
+        ys = [185, 280, 380, 480]
+        for i in range(4):
+            row = []
+            for j in range(4):
+                lbl = Label(root, text="", font=("Helvetica", 26), width=4, height=1)
+                lbl.place(x=xs[j], y=ys[i])
+                row.append(lbl)
+            self.cells.append(row)
+        root.update()
 
+    def update(self):
+        state = self.board.as_numpy()
+        self.score_label.config(text=str(self.board.score))
+        for i in range(4):
+            for j in range(4):
+                val = int(state[i, j])
+                lbl = self.cells[i][j]
+                if val > 0:
+                    lbl.config(text=str(val))
+                else:
+                    lbl.config(text="")
 
-	if state[0,0]>0:
-	 pos0.destroy()
-	if state[0,1]>0:
-	 pos1.destroy()
-	if state[0,2]>0:
-	 pos2.destroy()
-	if state[0,3]>0:	
- 	 pos3.destroy()
-	if state[1,0]>0:
-	 pos4.destroy()
-	if state[1,1]>0:
-	 pos5.destroy()
-	if state[1,2]>0:
-	 pos6.destroy()
-	if state[1,3]>0:
-	 pos7.destroy()
-	if state[2,0]>0:
-	 pos8.destroy()
-	if state[2,1]>0:
-	 pos9.destroy()
-	if state[2,2]>0:
- 	 pos10.destroy()
-	if state[2,3]>0:
-	 pos11.destroy()
-	if state[3,0]>0:
-	 pos12.destroy()
-	if state[3,1]>0:
-	 pos13.destroy()
-	if state[3,2]>0:
-	 pos14.destroy()
-	if state[3,3]>0:
-	 pos15.destroy()
+        self.root.update()
 
+def run_game(trials=300, depth=10, delay=0.05):
+    b = Board()
+    root = Tk()
+    gui = GUI(root, b)
+    # run until over
+    while not b.over:
+        gui.update()
+        # choose move with MCTS
+        move = mcts_choose_move(b, trials=trials, depth=depth)
+        if not move:
+            break
+        b.move(move)
+        time.sleep(delay)
+        root.update()
+    gui.update()
+    print("Game finished. Score:", b.score)
+    root.mainloop()   # keep window open when done
 
-
-b0=board()
-b0.game_state()
-window = Tk()
-window.title('2048 - AI')
-window.geometry("654x608")
-img = ImageTk.PhotoImage(Image.open("background.png"))
-lbl = Label(window, image = img)
-lbl.place(x=0, y=0)
-lbl=Label(window, text=b0.score, fg='black', font=("Helvetica", 26))
-lbl.place(x=225, y=88)
-
-while b0.over == False:
-  try:
-   mcts()
-  except:
-   failed_attempt=[]
-print b0.score
-
-
-
+if __name__ == "__main__":
+    # you can change trials/depth to make AI slower/stronger
+    run_game(trials=300, depth=8, delay=0.02)

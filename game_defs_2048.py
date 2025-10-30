@@ -1,124 +1,133 @@
+# game_defs_2048.py
+import random
 import numpy as np
-from random import randint, random
 
-def rm_zeros(the_list, val):
-   return [value for value in the_list if value != val]
+class Board:
+    def __init__(self, n=4):
+        self.n = n
+        self.state = [[0]*n for _ in range(n)]
+        self.score = 0
+        self.over = False
+        self.win = False
+        # start: add two tiles
+        self._add_random_tile()
+        self._add_random_tile()
 
-#new_game function
-n=4
-def new_game(n):
-	matrix = []
-	for i in range(n):
-		matrix.append([0] * n)
-	return matrix
-		#print(matrix)
+    def get_empty_cells(self):
+        empties = []
+        for i in range(self.n):
+            for j in range(self.n):
+                if self.state[i][j] == 0:
+                    empties.append((i, j))
+        return empties
 
-# board class: includes 1) getting game state, 2) moves, 3) score checking
-class board(object):
-  def __init__(self):
-    self.state = new_game(4) #4x4 zeros
-    self.score = 0
-    self.over = False
-    self.win = False
-    n=4
-  def get_empty_cells(self):
-    for i in range(n):
-      for j in range(n):
-        if self.state[i][j] == 0:
-          yield i, j
-  def get_same_cells(self):
-    for i in range(n-1):
-      for j in range(n-1):
-        if self.state[i][j] == self.state[i+1][j] or self.state[i][j+1] == self.state[i][j]:
-          yield i, j
+    def _add_random_tile(self):
+        empties = self.get_empty_cells()
+        if not empties:
+            return False
+        i, j = random.choice(empties)
+        self.state[i][j] = 4 if random.random() > 0.9 else 2
+        return True
 
-  def game_state(self):
-    for i in range(n):
-      for j in range(n):
-        if self.state[i][j] == 2048:
-          self.win = True
-    for i in range(n):
-      for j in range(n):
-        if self.state[i][j] == 0:
-          self.over = False
-    cells = list(self.get_empty_cells())
-    same_cells=list(self.get_same_cells())
-    if not cells and not same_cells:
-      self.over = True 
-    for i in range(n-1):
-      for j in range(n-1):
-        if self.state[i][j] == self.state[i+1][j] or self.state[i][j+1] == self.state[i][j]:
-          self.over = False
+    def _compress_and_merge_row(self, row):
+        """Compress a row to the left and merge equal tiles.
+           Returns new_row, gained_score."""
+        new = [v for v in row if v != 0]
+        gained = 0
+        i = 0
+        merged = []
+        while i < len(new):
+            if i+1 < len(new) and new[i] == new[i+1]:
+                val = new[i]*2
+                merged.append(val)
+                gained += val
+                i += 2
+            else:
+                merged.append(new[i])
+                i += 1
+        merged += [0] * (self.n - len(merged))
+        return merged, gained
 
-  def move(self, direction):
-    out=np.asarray(self.state) #new_game(4)
-    addscore=0            
-    if direction == 'up':
-      for i in range(n-1):
-        for j in range(n):
-          if self.state[i][j] == self.state[i+1][j]:
-            out[i, j] = 2*self.state[i][j]
-            out[i+1,j] = 0
-            s=out[i, j]
-            addscore=addscore+s
+    def _transpose(self):
+        self.state = [list(row) for row in zip(*self.state)]
 
-      for i in range(n):
-        out2=out[out[:,i] != 0, i]
-        if 4-len(out2) > 0:
-          out[:,i]=np.pad(out2, [0, 4-len(out2)], mode='constant')
+    def _reverse_rows(self):
+        self.state = [list(reversed(row)) for row in self.state]
 
-    if direction == 'down':
-      for i in range(n-1):
-        for j in range(n):
-          if self.state[i][j] == self.state[i+1][j]:
-            out[i, j] = 2*self.state[i][j]
-            out[i+1,j] = 0
-            s=out[i, j]
-            addscore=addscore+s
+    def move(self, direction):
+        """Perform move. Returns True if the board changed, and score gained."""
+        before = [row[:] for row in self.state]
+        gained_total = 0
 
-      for i in range(n):
-        out2=out[out[:,i] != 0, i]
-        if 4-len(out2) > 0:
-          out[:,i]=np.insert(out2, np.zeros(4-len(out2)), 0, axis=0)
+        if direction == 'up':
+            self._transpose()
+            for i in range(self.n):
+                newrow, gained = self._compress_and_merge_row(self.state[i])
+                self.state[i] = newrow
+                gained_total += gained
+            self._transpose()
 
-    if direction == 'left':
-      for i in range(n):
-        for j in range(n-1):
-          if self.state[i][j] == self.state[i][j+1]:
-            out[i, j] = 2*self.state[i][j]
-            out[i,j+1] = 0
-            s=out[i, j]
-            addscore=addscore+s
+        elif direction == 'down':
+            self._transpose()
+            self._reverse_rows()
+            for i in range(self.n):
+                newrow, gained = self._compress_and_merge_row(self.state[i])
+                self.state[i] = newrow
+                gained_total += gained
+            self._reverse_rows()
+            self._transpose()
 
-      for i in range(n):
-        out2=out[i, out[i,:] != 0]
-        if 4-len(out2) > 0:
-          out[i,:]=np.pad(out2, [0, 4-len(out2)], mode='constant')
+        elif direction == 'left':
+            for i in range(self.n):
+                newrow, gained = self._compress_and_merge_row(self.state[i])
+                self.state[i] = newrow
+                gained_total += gained
 
-    if direction == 'right':
-      for i in range(n):
-        for j in range(n-1):
-          if self.state[i][j] == self.state[i][j+1]:
-            out[i, j] = 2*self.state[i][j]
-            out[i,j+1] = 0
-            s=out[i, j]
-            addscore=addscore+s
+        elif direction == 'right':
+            self._reverse_rows()
+            for i in range(self.n):
+                newrow, gained = self._compress_and_merge_row(self.state[i])
+                self.state[i] = newrow
+                gained_total += gained
+            self._reverse_rows()
+        else:
+            raise ValueError("direction must be one of 'up', 'down', 'left', 'right'")
 
-      for i in range(n):
-        out2=out[i, out[i,:] != 0]
-        if 4-len(out2) > 0:
-          out[i,:]=np.insert(out2, np.zeros(4-len(out2)), 0, axis=0)
+        changed = (before != self.state)
+        if changed:
+            self.score += gained_total
+            self._add_random_tile()
 
-    #introduce new tile as part of the move:
-    self.state=out
-    self.score=self.score+addscore
-    cells = list(self.get_empty_cells())
-    if random() < 0.9:
-      v = 2
-    else:
-      v = 4
-    self.state[ cells[randint(0, len(cells))-1] ]=v
+        # update state flags
+        self._update_game_state()
+        return changed, gained_total
 
+    def _update_game_state(self):
+        # check win
+        for i in range(self.n):
+            for j in range(self.n):
+                if self.state[i][j] == 2048:
+                    self.win = True
 
+        # if there is any empty cell -> not over
+        if any(0 in row for row in self.state):
+            self.over = False
+            return
 
+        # check if any merge possible
+        for i in range(self.n):
+            for j in range(self.n-1):
+                if self.state[i][j] == self.state[i][j+1]:
+                    self.over = False
+                    return
+        for j in range(self.n):
+            for i in range(self.n-1):
+                if self.state[i][j] == self.state[i+1][j]:
+                    self.over = False
+                    return
 
+        # otherwise over
+        self.over = True
+
+    def as_numpy(self):
+        return np.array(self.state)
